@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=rob file updating
+Exec=/home/pi/Python/auto-copy-files-from-usb.sh
+Type=Application
+Terminal=false
