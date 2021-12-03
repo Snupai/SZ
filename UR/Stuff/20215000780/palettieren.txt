@@ -1,0 +1,456 @@
+ Programm
+   VorStart
+     Script: Daten_Bereitstellen.script
+     Artikel≔'Artikelnummer eingeben'
+     Dateiname(Artikel)
+     Artikel_Gewicht≔1.428
+     Greifer_Gewicht≔1.7
+     set_payload_mass(Greifer_Gewicht)
+     Alles_OK≔DatenAuslesen()
+     Einstellen Pneu_enable=Ein
+     Einstellen Start_light=Ein
+     Einstellen Stop_light=Aus
+     Einstellen conveyor=Ein
+     'Einstellen convey_klemmung=Ein'
+     Grundeinstellungen
+       offset_pickup_z≔40
+       Schmalz: Release
+     Variablen Nullen
+       liste_paketpos≔[0,0,0,0,0,0,0,0,0]
+       karton_dim≔[0,0,0,0]
+       Paket_Zaehler≔0
+       signal≔ False 
+       Akt_Lifthoehe≔0
+       Akt_Lage≔1
+       Akt_Lagenart≔1
+       Lagenarten≔Lagen()
+       Zwischenlagen≔ZwischenLagen()
+       Dicke_ZwLagen≔3
+       Akt_Anz_ZwLagen≔0
+       Lagenanzahl≔AnzLagen()
+       Paket_Anzahl≔AnzPakete()
+       Pick_Anzahl≔anzPick()
+       Paletten_Masse≔Palette_Dim()
+       karton_dim≔Karton()
+       karton_h_gemess≔'Bitte gemessene Kartobhöhe in mm eingeben'
+       karton_dim[2]=karton_h_gemess
+       kart_hoeh_korre≔0
+       offset_basis≔0
+       karton_hoehe≔karton_dim[2]-kart_hoeh_korre
+       einlaufrichtung≔karton_dim[3]
+       lift_hoehe≔Akt_Lifthoehe
+       conveyor_start≔ False 
+     Debugging
+       'Paket_Zaehler≔'Startpaket Nummer''
+       Akt_Lage≔'Startlage eingeben'
+   Roboterprogramm
+     'FahreAchse'
+     'FahreAchse'
+     Grundstellung
+       FahreAchse
+         'Grund_St'
+         Gst_Schmalz_nah
+         'Gst_Schm_nah_Mu'
+         'Gst_Schmalz_far'
+         'Gst_Schm_far_Mu'
+     conveyor_start≔ True 
+     'Einstellen convey_klemmung=Ein'
+     Schleife Palette setzen
+       Schleife Akt_Lage<=Lagenanzahl
+         Akt_Lagenart≔Lagenarten[Akt_Lage-1]
+         Start und Endpaket
+           If Akt_Lagenart>1
+             zaehl_Lageart≔0
+             Endpaket≔0
+             Schleife zaehl_Lageart<Akt_Lagenart
+               Endpaket≔Endpaket+Pick_Anzahl[zaehl_Lageart]
+               zaehl_Lageart≔zaehl_Lageart+1
+             Startpaket≔Endpaket-Pick_Anzahl[Akt_Lagenart-1]
+           Else
+             Startpaket≔0
+             Endpaket≔Pick_Anzahl[Akt_Lagenart-1]
+           Paket_Zaehler≔Startpaket
+         Akt_pal_hoehe≔(Paletten_Masse[2]/1000)+((karton_hoehe*Akt_Lage)/1000)
+         Liftachse fahren
+           max_palett_hoeh≔750
+           If Akt_pal_hoehe≥(max_palett_hoeh/1000)
+             Lagen_ohne_Lift≔floor((max_palett_hoeh-Paletten_Masse[2])/karton_hoehe)
+             Akt_Lifthoehe≔(Akt_Lage-Lagen_ohne_Lift)*(karton_hoehe/1000)
+             If Akt_Lifthoehe > 0.900
+               Akt_Lifthoehe≔0.900
+               'Meldung: Maximale Lifthoehe erreicht'
+             move_liftkit(Akt_Lifthoehe*1000)
+             lift_hoehe≔Akt_Lifthoehe
+           Else
+             move_liftkit(0)
+         akt_hoe_pick≔karton_hoehe-(lift_hoehe*1000)
+         Aktuelle Palettenhoehe in Bezug zur Basis
+           offset_basis≔(0.87+Akt_Lifthoehe)-Akt_pal_hoehe
+           If offset_basis>0
+             sichere_hoehe≔(karton_hoehe/1000)*1.5
+           If offset_basis≤0
+             sichere_hoehe≔(offset_basis*-1)+(karton_hoehe/1000)
+         Zwischenlagen zählen
+           counter≔0
+           Akt_Anz_ZwLagen≔0
+           Schleife counter<Akt_Lage
+             Akt_Anz_ZwLagen≔Akt_Anz_ZwLagen + Zwischenlagen[counter]
+             counter≔counter+1
+         akt_hoe_ueber≔(karton_hoehe*(Akt_Lage-1))-(lift_hoehe*1000)
+         akt_hoe_place≔(karton_hoehe*Akt_Lage)-(lift_hoehe*1000)+(Akt_Anz_ZwLagen*Dicke_ZwLagen)
+         Schleife Lage setzen
+           Schleife Paket_Zaehler<Endpaket
+             Paketposition anfragen
+               liste_paketpos≔PaketPos(Paket_Zaehler)
+               If Paket_Zaehler<(Endpaket-1)
+                 liste_nxt_paket≔PaketPos(Paket_Zaehler+1)
+                 If liste_nxt_paket[4]≤400
+                   Next_Place_near≔ True 
+                 Else
+                   Next_Place_near≔ False 
+               Else
+                 Next_Place_near≔ True 
+               If einlaufrichtung≟0
+                 Einlaufrichtung längs
+                   pickup_x≔liste_paketpos[0]
+                   pickup_y≔liste_paketpos[1]
+                   pickup_z_vor≔akt_hoe_pick+offset_pickup_z
+                   'pickup_z_vor≔akt_hoe_pick+kart_hoeh_korre+50'
+                   If liste_paketpos[6]≥2
+                     2 Paket Startposition laengs
+                       pickup_rot≔d2r(liste_paketpos[2]+90)
+                       Vor_Aufn_Pose≔p[pickup_x/1000,pickup_y/1000,pickup_z_vor/1000,0,0,pickup_rot]
+                       FahreAchse
+                         Vor_Aufn_Pose
+                       vor_aufn_gelenk≔get_actual_joint_positions()
+                     2 Paket laengs aufnehmen
+                       Aufn_Pos≔p[pickup_x/1000,pickup_y/1000,((akt_hoe_pick-8)/1000),0,0,pickup_rot]
+                       Warten conveyor_paket=HI
+                       Warten convey_pak_rdy=HI
+                       Warten: 1.0
+                       Warten convey_pak_rdy=HI
+                       'conveyor_start≔ False '
+                       FahreLinear
+                         Aufn_Pos
+                         Aufruf Greifer_aktivieren_1
+                       set_payload_mass(Greifer_Gewicht+(Artikel_Gewicht*liste_paketpos[6]))
+                       Freifahren Aufnahme
+                         tmp_pose_1≔get_actual_tcp_pose()
+                         Einstellen conveyor=Aus
+                         tmp_pose_zwi≔pose_trans(tmp_pose_1, p[0,0,0.2,0,0,0])
+                         'tmp_pose_zw2≔pose_trans(tmp_pose_1, p[0.02,0.03,0.08,0,0,0])'
+                         FahreLinear
+                           tmp_pose_zwi
+                           'tmp_pose_zw2'
+                         conveyor_start≔ True 
+                         Einstellen conveyor=Ein
+                       Zwischenposition
+                         If einlaufrichtung≟1
+                           place_rot_ueb≔d2r(liste_paketpos[5]-225)
+                         Else
+                           place_rot_ueb≔d2r(liste_paketpos[5]-315)
+                         tmp_pose_1≔get_actual_tcp_pose()
+                         pose_zwischen≔pose_add(tmp_pose_1, p[-0.360,-0.360,0,0,0,0])
+                         pose_zwischen[2]=sichere_hoehe
+                         pose_ueb_pal_2≔p[-0.650,-0.550,sichere_hoehe,0,0,place_rot_ueb]
+                         'pfosten≔p[-0.601,-0.133,sichere_hoehe,0,0,place_rot_ueb]'
+                         FahreAchse
+                           pose_zwischen
+                           'pfosten'
+                           pose_ueb_pal_2
+                         gelen_ueb_pal_2≔get_actual_joint_positions()
+                   Else
+                     1 Paket aufnehmen
+                       pickup_rot≔d2r(liste_paketpos[2])
+                       Vor_Aufn_Pose≔p[pickup_x/1000,pickup_y/1000,pickup_z_vor/1000,0,0,pickup_rot]
+                       FahreAchse
+                         Vor_Aufn_Pose
+                       vor_aufn_gelenk≔get_actual_joint_positions()
+                     1 Paket quer aufnehmen
+                       Aufn_Pos≔p[pickup_x/1000,pickup_y/1000,((akt_hoe_pick-8)/1000),0,0,pickup_rot]
+                       Warten conveyor_paket=HI
+                       Warten: 0.1
+                       'conveyor_start≔ False '
+                       FahreLinear
+                         Aufn_Pos
+                         Aufruf Greifer_aktivieren_1
+                       set_payload_mass(Greifer_Gewicht+Artikel_Gewicht)
+                       Freifahren Aufnahme
+                         tmp_pose_1≔get_actual_tcp_pose()
+                         tmp_pose_zwi≔pose_trans(tmp_pose_1, p[0,0,0.1,0,0,0])
+                         'tmp_pose_zw2≔pose_trans(tmp_pose_1, p[0.02,0.03,0.08,0,0,0])'
+                         FahreLinear
+                           tmp_pose_zwi
+                           'tmp_pose_zw2'
+                         conveyor_start≔ True 
+                       Zwischenposition
+                         If einlaufrichtung≟0
+                           place_rot_ueb≔d2r(liste_paketpos[5]-225)
+                         Else
+                           place_rot_ueb≔d2r(liste_paketpos[5]-315)
+                         tmp_pose_1≔get_actual_tcp_pose()
+                         pose_zwischen≔pose_add(tmp_pose_1, p[-0.360,-0.360,sichere_hoehe,0,0,0])
+                         pose_ueb_pal_2≔p[-0.550,-0.650,sichere_hoehe,0,0,place_rot_ueb]
+                         'pfosten≔p[-0.601,-0.133,sichere_hoehe,0,0,place_rot_ueb]'
+                         FahreAchse
+                           pose_zwischen
+                           'pfosten'
+                           pose_ueb_pal_2
+                         gelen_ueb_pal_2≔get_actual_joint_positions()
+               Else
+                 Einlaufrichtung quer
+                   'X und Y vertauscht'
+                   pickup_x≔liste_paketpos[1]*(-1)
+                   pickup_y≔liste_paketpos[0]*(-1)
+                   pickup_z_vor≔akt_hoe_pick+offset_pickup_z
+                   If liste_paketpos[6]≟1
+                     1 Paket Startposition
+                       pickup_rot≔d2r(liste_paketpos[2]+90)
+                       Vor_Aufn_Pose≔p[pickup_x/1000,pickup_y/1000,pickup_z_vor/1000,0,0,pickup_rot]
+                       FahreAchse
+                         Vor_Aufn_Pose
+                       vor_aufn_gelenk≔get_actual_joint_positions()
+                     1 Paket aufnehmen
+                       Aufn_Pos≔p[pickup_x/1000,pickup_y/1000,((akt_hoe_pick)/1000),0,0,pickup_rot]
+                       Warten conveyor_paket=HI
+                       Warten: 0.1
+                       'conveyor_start≔ False '
+                       FahreLinear
+                         Aufn_Pos
+                         Aufruf Greifer_aktivieren_1
+                       set_payload_mass(Greifer_Gewicht+Artikel_Gewicht)
+                       Freifahren Aufnahme
+                         tmp_pose_1≔get_actual_tcp_pose()
+                         tmp_pose_zwi≔pose_trans(tmp_pose_1, p[0,0,0.08,0,0,0])
+                         FahreLinear
+                           tmp_pose_zwi
+                         conveyor_start≔ True 
+                       Zwischenposition
+                         If einlaufrichtung≟0
+                           place_rot_ueb≔d2r(liste_paketpos[5]-225)
+                         Else
+                           place_rot_ueb≔d2r(liste_paketpos[5]-315)
+                         tmp_pose_1≔get_actual_tcp_pose()
+                         pose_zwischen≔pose_add(tmp_pose_1, p[-0.360,-0.360,sichere_hoehe,0,0,0])
+                         pose_zwischen[2]=sichere_hoehe
+                         pose_ueb_pal_2≔p[-0.600,-0.400,sichere_hoehe,0,0,place_rot_ueb]
+                         FahreAchse
+                           pose_zwischen
+                           pose_ueb_pal_2
+                         gelen_ueb_pal_2≔get_actual_joint_positions()
+                   ElseIf liste_paketpos[6]≟2
+                     2 Pakete aufnehmen
+                       pickup_rot≔d2r(liste_paketpos[2])
+                       Vor_Aufn_Pose≔p[pickup_x/1000,0,pickup_z_vor/1000,0,0,pickup_rot]
+                       FahreAchse
+                         Vor_Aufn_Pose
+                       vor_aufn_gelenk≔get_actual_joint_positions()
+                     Erstes Paket aufnehmen
+                       Aufn_Pos≔p[pickup_x/1000,0,((akt_hoe_pick)/1000),0,0,pickup_rot]
+                       Warten conveyor_paket=HI
+                       Warten: 0.1
+                       'conveyor_start≔ False '
+                       FahreLinear
+                         Aufn_Pos
+                         Aufruf Greifer_aktivieren_1
+                       set_payload_mass(Greifer_Gewicht+Artikel_Gewicht)
+                       Zweites Paket aufnehmen
+                         Vor_Aufn_Pose≔p[pickup_x/1000,((pickup_y/1000)-0.02),pickup_z_vor/1000,0,0,pickup_rot]
+                         FahreLinear
+                           Vor_Aufn_Pose
+                         'conveyor_start≔ True '
+                         Warten conveyor_paket=HI
+                         'Warten: 0.1'
+                         'conveyor_start≔ False '
+                         Aufn_Pos≔p[pickup_x/1000,pickup_y/1000,((akt_hoe_pick)/1000),0,0,pickup_rot]
+                         Aufn_Pos_vor≔p[pickup_x/1000,pickup_y/1000,pickup_z_vor/1000,0,0,pickup_rot]
+                         FahreLinear
+                           Aufn_Pos_vor
+                           Aufn_Pos
+                         Aufruf Greifer_deaktivieren_1
+                         Warten: 0.5
+                         Aufruf Greifer_aktivieren_1
+                         set_payload_mass(Greifer_Gewicht+(Artikel_Gewicht*2))
+                       Freifahren
+                         tmp_pose_1≔get_actual_tcp_pose()
+                         tmp_pose_zwi≔pose_trans(tmp_pose_1, p[0,0,0.08,0,0,0])
+                         FahreLinear
+                           tmp_pose_zwi
+                         conveyor_start≔ True 
+                       Zwischenposition
+                         place_rot_ueb≔d2r(liste_paketpos[5]+135)
+                         tmp_pose_1≔get_actual_tcp_pose()
+                         pose_zwischen≔pose_add(tmp_pose_1, p[-0.360,-0.360,0,0,0,0])
+                         pose_zwischen[2]=sichere_hoehe
+                         pose_ueb_pal_2≔p[-0.600,-0.400,sichere_hoehe,0,0,place_rot_ueb]
+                         FahreAchse
+                           pose_zwischen
+                           pose_ueb_pal_2
+                         gelen_ueb_pal_2≔get_actual_joint_positions()
+                   ElseIf liste_paketpos[6]≟3
+                     3 Pakete aufnehmen
+                       pickup_rot≔d2r(liste_paketpos[2])
+                       Vor_Aufn_Pose≔p[pickup_x/1000,karton_dim[1]/2000,pickup_z_vor/1000,0,0,pickup_rot]
+                       FahreAchse
+                         Vor_Aufn_Pose
+                       vor_aufn_gelenk≔get_actual_joint_positions()
+                     Erstes Paket aufnehmen
+                       Aufn_Pos≔p[pickup_x/1000,karton_dim[1]/2000,((akt_hoe_pick)/1000),0,0,pickup_rot]
+                       Warten conveyor_paket=HI
+                       Warten: 0.1
+                       FahreLinear
+                         Aufn_Pos
+                         Aufruf Greifer_aktivieren_1
+                       set_payload_mass(Greifer_Gewicht+Artikel_Gewicht)
+                       Zweites Paket aufnehmen
+                         Vor_Aufn_Pose≔p[pickup_x/1000,(-1*((karton_dim[1]/2000)+0.01)),pickup_z_vor/1000,0,0,pickup_rot]
+                         FahreLinear
+                           Vor_Aufn_Pose
+                         Warten conveyor_paket=HI
+                         Aufn_Pos≔p[pickup_x/1000,(-1*(karton_dim[1]/2000)),((akt_hoe_pick)/1000),0,0,pickup_rot]
+                         Vor_Aufn_Pose≔p[pickup_x/1000,(-1*(karton_dim[1]/2000)),pickup_z_vor/1000,0,0,pickup_rot]
+                         FahreLinear
+                           Vor_Aufn_Pose
+                           Aufn_Pos
+                         Aufruf Greifer_deaktivieren_1
+                         Warten: 0.5
+                         Aufruf Greifer_aktivieren_1
+                         set_payload_mass(Greifer_Gewicht+(Artikel_Gewicht*2))
+                       Drittes Paket aufnehmen
+                         Vor_Aufn_Pose≔p[pickup_x/1000,(-1*((karton_dim[1]*1.5/1000)+0.01)),pickup_z_vor/1000,0,0,pickup_rot]
+                         FahreLinear
+                           Vor_Aufn_Pose
+                         Warten conveyor_paket=HI
+                         Aufn_Pos≔p[pickup_x/1000,(-1*(karton_dim[1]*1.5/1000)),((akt_hoe_pick)/1000),0,0,pickup_rot]
+                         FahreLinear
+                           Aufn_Pos
+                         Aufruf Greifer_deaktivieren_1
+                         Warten: 0.5
+                         Aufruf Greifer_aktivieren_1
+                         set_payload_mass(Greifer_Gewicht+(Artikel_Gewicht*3))
+                       Freifahren
+                         tmp_pose_1≔get_actual_tcp_pose()
+                         tmp_pose_zwi≔pose_trans(tmp_pose_1, p[0,0,0.08,0,0,0])
+                         FahreLinear
+                           tmp_pose_zwi
+                         conveyor_start≔ True 
+                       Zwischenposition
+                         place_rot_ueb≔d2r(liste_paketpos[5]+135)
+                         tmp_pose_1≔get_actual_tcp_pose()
+                         pose_zwischen≔pose_add(tmp_pose_1, p[-0.360,-0.360,sichere_hoehe,0,0,0])
+                         pose_ueb_pal_2≔p[-0.600,-0.400,sichere_hoehe,0,0,place_rot_ueb]
+                         FahreAchse
+                           pose_zwischen
+                           pose_ueb_pal_2
+                         gelen_ueb_pal_2≔get_actual_joint_positions()
+             Paket ablegen
+               place_x≔liste_paketpos[3]*(-1)
+               place_y≔liste_paketpos[4]*(-1)
+               place_z≔akt_hoe_place
+               If Akt_Lage≤6
+                 place_z≔akt_hoe_place+3
+               If einlaufrichtung≟1
+                 'place_rot≔d2r(liste_paketpos[5]-90)'
+                 If liste_paketpos[6]≟1
+                   place_rot≔d2r(liste_paketpos[5])
+                 Else
+                   place_rot≔d2r(liste_paketpos[5]-90)
+               Else
+                 If liste_paketpos[6]≟1
+                   place_rot≔d2r(liste_paketpos[5])
+                 Else
+                   place_rot≔d2r(liste_paketpos[5]+90)
+               place_pos≔p[place_x/1000,place_y/1000,(place_z/1000),0,0,place_rot]
+               x_vec≔liste_paketpos[7]
+               y_vec≔liste_paketpos[8]
+               place_x_vor≔place_x+(x_vec*30*(-1))
+               place_y_vor≔place_y+(y_vec*30*(-1))
+               place_z_vor≔place_z+karton_hoehe+30
+               place_pos_vor≔p[place_x_vor/1000,place_y_vor/1000,place_z_vor/1000,0,0,place_rot]
+               Debug Drehwinkel
+                 rot_debug_2≔pose_trans(Palette_extend, place_pos_vor)
+                 rot_debug_trans≔get_inverse_kin(rot_debug_2)
+                 If rot_debug_trans[5]≥6
+                   rot_debug_trans[5]=rot_debug_trans[5]-6.28318
+                 If rot_debug_trans[5]≤-6
+                   rot_debug_trans[5]=rot_debug_trans[5]+6.28318
+               'Meldung'
+               'FahreAchse'
+               movej(rot_debug_trans, a=2, v=3.14)
+               FahreLinear
+                 place_pos
+               Aufruf Greifer_deaktivieren_1
+               set_payload_mass(Greifer_Gewicht)
+               Freifahren Ablage
+                 tmp_pose_1≔get_actual_tcp_pose()
+                 tmp_pose_ablage≔pose_trans(tmp_pose_1, p[0,0,0.030,0,0,0])
+                 FahreLinear
+                   tmp_pose_ablage
+               Zurueck zur Aufnahmeposition
+                 movej(gelen_ueb_pal_2, a=2, v=3.141)
+                 If Next_Place_near≟ True 
+                   If liste_nxt_paket[6]≟1
+                     FahreAchse
+                       Gst_Schmalz_nah
+                       'Gst_Schm_nah_Mu'
+                   Else
+                     FahreAchse
+                       Gst_Schm_nah_Mu
+                       'Gst_Schmalz_nah'
+                 Else
+                   If liste_nxt_paket[6]≟1
+                     FahreAchse
+                       'Gst_Schmalz_far'
+                       Gst_Schm_far_Mu
+                   Else
+                     FahreAchse
+                       'Gst_Schm_far_Mu'
+                       Gst_Schmalz_far
+             Paket_Zaehler≔Paket_Zaehler+1
+         If Zwischenlagen[Akt_Lage-1]≟1
+           signal≔ True 
+           Meldung: Zwischenlage einlegen und dann WEITER drücken! Achtung Roboter fährt los!
+           signal≔ False 
+         FahreAchse
+           Gst_Schm_nah_Mu
+         Akt_Lage≔Akt_Lage+1
+       FahreAchse
+         Palettenwechsel
+       LIFT: 200mm
+       signal≔ True 
+       Meldung: Palette wechseln und dann WEITER drücken! Achtung Roboter fährt los!
+       signal≔ False 
+       Akt_Lage≔1
+       lift_hoehe≔0
+       Akt_Lifthoehe≔0
+   Thread_1
+     If einlaufrichtung≟1
+       If conveyor_start≟ True 
+         Einstellen conveyor=Ein
+         Einstellen convey_klemmung=Ein
+         If conveyor_paket≟ False 
+           Einstellen convey_klemmung=Aus
+           Warten convey_pak_rdy=HI
+           Einstellen convey_klemmung=Ein
+           Warten conveyor_paket=HI
+       Else
+         Einstellen conveyor=Aus
+     sync()
+   Thread_2
+     'Signalleuchte Zwischenlage'
+     If signal≟ True 
+       Einstellen Signalleuchte=Ein
+       Einstellen Akustisches_Sig=Ein
+       Warten: 0.5
+       Einstellen Signalleuchte=Aus
+       Einstellen Akustisches_Sig=Aus
+       Warten: 0.5
+     Else
+       Einstellen Signalleuchte=Aus
+       Einstellen Akustisches_Sig=Aus
+     sync()
+   Greifer_deaktivieren_1
+     Schmalz: Release
+   Greifer_aktivieren_1
+     Schmalz: Suction
+     Schmalz: Suction

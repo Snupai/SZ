@@ -1,0 +1,60 @@
+m_data = rpc_factory("xmlrpc", "http://192.168.0.10:10000")
+
+def DatenAuslesen():
+  test = m_data.UR_ReadDataFromUsbStick()
+  return test
+end
+
+def Dateiname(File):
+  m_data.UR_SetFileName(File)
+end
+
+def Palette_Dim():
+  palette = m_data.UR_Palette()
+  return palette
+end
+
+def Karton():
+  karton = m_data.UR_Karton()
+  return karton
+end
+
+def Lagen():
+  lagen = m_data.UR_Lagen()
+  return lagen
+end
+
+def PaketPos(Nummer):
+  paket_pos = m_data.UR_PaketPos(Nummer)
+  return paket_pos
+end
+
+def AnzLagen():
+  anz_lagen = m_data.UR_AnzLagen()
+  return anz_lagen
+end
+
+def AnzPakete():
+  anz_pakete = m_data.UR_AnzPakete()
+  return anz_pakete
+end
+
+def anzPick():
+  anz_pick = m_data.UR_PaketeZuordnung()
+  return anz_pick
+end
+
+def aktStartlage():
+  lage = m_data.UR_Startlage()
+  return lage
+end
+
+def gemKartonhoehe():
+  hoehe = m_data.UR_Paket_hoehe()
+  return hoehe
+end
+
+def liste_ZwischenLagen():
+  zwLagen = m_data.UR_Zwischenlagen()
+  return zwLagen
+end

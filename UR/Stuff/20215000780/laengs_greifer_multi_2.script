@@ -1,0 +1,1247 @@
+def laengs_greifer_multi_2():
+  step_count_3334ff52_adee_4d90_a785_ce936b5eab28 = 0.0
+  thread Step_Counter_Thread_8067a1c6_ef53_400b_8773_d1f7ed278154():
+    while (True):
+      step_count_3334ff52_adee_4d90_a785_ce936b5eab28 = step_count_3334ff52_adee_4d90_a785_ce936b5eab28 + 1.0
+      sync()
+    end
+  end
+  run Step_Counter_Thread_8067a1c6_ef53_400b_8773_d1f7ed278154()
+  set_safety_mode_transition_hardness(1)
+  set_gravity([0.0, 0.0, 9.82])
+  set_standard_analog_input_domain(0, 1)
+  set_standard_analog_input_domain(1, 1)
+  set_tool_analog_input_domain(0, 1)
+  set_tool_analog_input_domain(1, 1)
+  set_analog_outputdomain(0, 0)
+  set_analog_outputdomain(1, 0)
+  set_input_actions_to_default()
+  set_tcp(p[0.0,-0.051,0.13140000000000002,0.0,3.1415,0.0])
+  set_payload(0.4, [0.0, 0.0, 0.1])
+  set_tool_communication(True, 115200, 2, 1, 5.0, 5.5)
+  set_tool_output_mode(0)
+  set_tool_digital_output_mode(0, 1)
+  set_tool_digital_output_mode(1, 1)
+  set_tool_voltage(24)
+  global Aufnahme=p[0.6304040240145141,-0.24039014232008946,0.02327030357851624,1.3083963907615462E-15,3.1823984201603692E-15,2.358882078654062]
+  global Palette_extend=p[0.24614836015339767,-0.6002257611007016,-0.7805000000000001,1.58977340400682E-15,-6.581349388980568E-16,-0.7849999999999997]
+  # begin: URCap Installation Node
+  #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+  #   Type: Schmalz Gripper
+  my_daemon = rpc_factory("xmlrpc", "http://127.0.0.1:39991/RPC2")
+  # end: URCap Installation Node
+  # begin: URCap Installation Node
+  #   Source: LIFTKIT, 1.0.5, SKF Actuation System (Liestal) AG
+  #   Type: LIFTKIT
+  skfliftkit = rpc_factory("xmlrpc", "http://127.0.0.1:40405/RPC2")
+  def liftKitReachedPosition(positionEnd, tolerance):
+    local positionNow = skfliftkit.get_position()
+    local upperLimit = positionEnd + tolerance
+    local lowerLimit = positionEnd - tolerance
+    if positionNow <= upperLimit:
+      if positionNow >= lowerLimit:
+        return True
+      end
+    end
+    return False
+  end
+  def liftKitCheckConnection():
+    if (skfliftkit.is_connected() == True):
+      return True
+    else:
+      popup("Not connected to Liftkit. Please go to Installation.", " Not connected! ", False, True, blocking=True)
+      halt
+      return False
+    end
+  end
+  def liftKitStopMotion():
+    skfliftkit.move_stop()
+  end
+  def liftKitTriggerWdt():
+    skfliftkit.trigger_watchdog("move")
+  end
+  def liftKitIsMoving():
+    return skfliftkit.is_moving()
+  end
+  def get_liftkit_position():
+    return skfliftkit.get_position()
+  end
+  def move_liftkit(liftkitPosition):
+    local movingDelay = 0
+    local retry = True
+    while retry == True:
+      retry = False
+      if liftKitCheckConnection() == True:
+        liftKitStopMotion()
+        sleep(0.5)
+        liftKitTriggerWdt()
+        skfliftkit.move_to_remote_position(liftkitPosition)
+        liftKitTriggerWdt()
+        while liftKitReachedPosition(liftkitPosition, 1) == False and liftKitCheckConnection() == True and (liftKitIsMoving() == True  or movingDelay < 20):
+          if movingDelay < 21:
+            movingDelay = movingDelay + 1
+          end
+          liftKitTriggerWdt()
+          sleep(0.1)
+        end
+        liftKitStopMotion()
+        sleep(0.5)
+      end
+      if liftKitReachedPosition(liftkitPosition, 2) == False:
+        popup("Pillar is not in position. Press 'Continue' to retry.", " Position Warning! ", True, False, blocking=True)
+        retry = True
+        movingDelay = 0
+      end
+    end
+  end
+  # end: URCap Installation Node
+  global PartPresentSP2= False 
+  global Gst_Schmalz_nah_p=p[.446565087499, -.329209107419, .358428484664, .003601506104, .000113398026, .783248883685]
+  global Gst_Schmalz_nah_q=[2.168959617614746, -1.4834707540324708, 1.8139274756061, 1.2423412042805175, 1.5721855163574219, 2.955994129180908]
+  global Gst_Schm_nah_Mu_p=p[.424384680952, -.346168943795, .260945514780, .044524262534, .018584232756, 2.333841978067]
+  global Gst_Schm_nah_Mu_q=[2.0528907775878906, -1.3424323362163086, 1.8359888235675257, 1.0946170526691894, 1.607877492904663, 1.289229393005371]
+  global Gst_Schmalz_far_p=p[.433209570750, -.393882076105, .367564965177, .011062317880, .015600458455, -2.362060635366]
+  global Gst_Schmalz_far_q=[2.1185903549194336, -1.6521359882750453, 1.9646480719195765, -1.8711067638792933, -1.5622108618365687, 2.905947685241699]
+  global Gst_Schm_far_Mu_p=p[.447463853835, -.402502413925, .335972035391, -.073619713854, .025836923201, 2.318944779229]
+  global Gst_Schm_far_Mu_q=[2.019165515899658, -1.723933836022848, 2.102452103291647, -2.0063349209227503, -1.5516837278949183, 4.409561634063721]
+  global Palettenwechsel_p=p[.543469900698, -.388473776786, .315779375136, .004781882604, .014947981736, .872074181786]
+  global Palettenwechsel_q=[2.2468180656433105, -1.2712996763041993, 1.6351097265826624, 1.2134622770496826, 1.5856781005859375, 2.945037841796875]
+  $ 1 "VorStart"
+  $ 2 "Script: Daten_Bereitstellen.script"
+  m_data = rpc_factory("xmlrpc", "http://192.168.0.10:10000")
+  
+  def DatenAuslesen():
+    test = m_data.UR_ReadDataFromUsbStick()
+    return test
+  end
+  
+  def Dateiname(File):
+    m_data.UR_SetFileName(File)
+  end
+  
+  def Palette_Dim():
+    palette = m_data.UR_Palette()
+    return palette
+  end
+  
+  def Karton():
+    karton = m_data.UR_Karton()
+    return karton
+  end
+  
+  def Lagen():
+    lagen = m_data.UR_Lagen()
+    return lagen
+  end
+  
+  def PaketPos(Nummer):
+    paket_pos = m_data.UR_PaketPos(Nummer)
+    return paket_pos
+  end
+  
+  def AnzLagen():
+    anz_lagen = m_data.UR_AnzLagen()
+    return anz_lagen
+  end
+  
+  def AnzPakete():
+    anz_pakete = m_data.UR_AnzPakete()
+    return anz_pakete
+  end
+  
+  def anzPick():
+    anz_pick = m_data.UR_PaketeZuordnung()
+    return anz_pick
+  end
+  
+  def aktStartlage():
+    lage = m_data.UR_Startlage()
+    return lage
+  end
+  
+  def gemKartonhoehe():
+    hoehe = m_data.UR_Paket_hoehe()
+    return hoehe
+  end
+  
+  def liste_ZwischenLagen():
+    zwLagen = m_data.UR_Zwischenlagen()
+    return zwLagen
+  end
+  $ 5 "Artikel_Gewicht≔0.435"
+  global Artikel_Gewicht=0.435
+  $ 6 "Greifer_Gewicht≔1.7"
+  global Greifer_Gewicht=1.7
+  $ 7 "set_payload_mass(Greifer_Gewicht)"
+  set_payload_mass(Greifer_Gewicht)
+  $ 8 "Alles_OK≔DatenAuslesen()"
+  global Alles_OK=DatenAuslesen()
+  $ 9 "Einstellen licht_start=Ein"
+  set_standard_digital_out(1, True)
+  $ 10 "Einstellen licht_reset=Aus"
+  set_standard_digital_out(3, False)
+  $ 11 "Einstellen freigabe_convey=Ein"
+  set_standard_digital_out(4, True)
+  $ 14 "Grundeinstellungen"
+  $ 15 "offset_pickup_z≔40"
+  global offset_pickup_z=40
+  # begin: URCap Program Node
+  #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+  #   Type: Schmalz Gripper
+  $ 17 "Schmalz: Release"
+  set_tool_voltage(24)
+  set_tool_digital_out(0, True)
+  set_tool_digital_out(1, True)
+  sleep(0.5)
+  set_tool_digital_out(0, False)
+  set_tool_digital_out(1, True)
+  sleep(0.05)
+  # end: URCap Program Node
+  $ 18 "Variablen Nullen"
+  $ 19 "liste_paketpos≔[0,0,0,0,0,0,0,0,0]"
+  global liste_paketpos=[0,0,0,0,0,0,0,0,0]
+  $ 20 "karton_dim≔[0,0,0,0]"
+  global karton_dim=[0,0,0,0]
+  $ 21 "Paket_Zaehler≔0"
+  global Paket_Zaehler=0
+  $ 22 "signal≔ False "
+  global signal=  False  
+  $ 23 "Akt_Lifthoehe≔0"
+  global Akt_Lifthoehe=0
+  $ 24 "Akt_Lage≔1"
+  global Akt_Lage=1
+  $ 25 "Akt_Lagenart≔1"
+  global Akt_Lagenart=1
+  $ 26 "Lagenarten≔Lagen()"
+  global Lagenarten=Lagen()
+  $ 27 "Zwischenlagen≔liste_ZwischenLagen()"
+  global Zwischenlagen=liste_ZwischenLagen()
+  $ 28 "Dicke_ZwLagen≔3"
+  global Dicke_ZwLagen=3
+  $ 29 "Akt_Anz_ZwLagen≔0"
+  global Akt_Anz_ZwLagen=0
+  $ 30 "Lagenanzahl≔AnzLagen()"
+  global Lagenanzahl=AnzLagen()
+  $ 31 "Paket_Anzahl≔AnzPakete()"
+  global Paket_Anzahl=AnzPakete()
+  $ 32 "Pick_Anzahl≔anzPick()"
+  global Pick_Anzahl=anzPick()
+  $ 33 "Paletten_Masse≔Palette_Dim()"
+  global Paletten_Masse=Palette_Dim()
+  $ 34 "karton_dim≔Karton()"
+  global karton_dim=Karton()
+  $ 36 "karton_dim[2]=gemKartonhoehe()"
+  karton_dim[2]=gemKartonhoehe()
+  # begin: URCap Program Node
+  #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+  #   Type: Schmalz Gripper
+  $ 37 "Schmalz: Suction"
+  set_tool_voltage(24)
+  set_tool_digital_out(0, False)
+  set_tool_digital_out(1, False)
+  wait_threshold_s = 1.5
+  current_time_cnt = 0.0
+  while (current_time_cnt<wait_threshold_s):
+    set_tool_digital_out(0, False)
+    set_tool_digital_out(1, False)
+    if (get_tool_digital_in(1)):
+      break
+    end
+    current_time_cnt = current_time_cnt+0.1
+    sleep(0.1)
+  end
+  # end: URCap Program Node
+  $ 38 "kart_hoeh_korre≔0"
+  global kart_hoeh_korre=0
+  $ 39 "offset_basis≔0"
+  global offset_basis=0
+  $ 40 "karton_hoehe≔karton_dim[2]-kart_hoeh_korre"
+  global karton_hoehe=karton_dim[2]-kart_hoeh_korre
+  $ 41 "einlaufrichtung≔karton_dim[3]"
+  global einlaufrichtung=karton_dim[3]
+  $ 42 "lift_hoehe≔Akt_Lifthoehe"
+  global lift_hoehe=Akt_Lifthoehe
+  $ 43 "conveyor_start≔ False "
+  global conveyor_start=  False  
+  $ 44 "Startlage"
+  $ 46 "Akt_Lage≔aktStartlage()"
+  global Akt_Lage=aktStartlage()
+  $ 453 "Thread_1"
+  thread Thread_1():
+    while (True):
+      $ 454 "If einlaufrichtung≟1"
+      if (einlaufrichtung == 1):
+        $ 455 "If conveyor_start≟ True "
+        if (conveyor_start ==   True  ):
+          $ 456 "Einstellen freigabe_convey=Ein"
+          set_standard_digital_out(4, True)
+          $ 457 "Einstellen klemmung=Ein"
+          set_standard_digital_out(5, True)
+          $ 458 "If paket_vorne≟  False "
+          if (get_standard_digital_in(4) ==    False  ):
+            $ 459 "Einstellen klemmung=Aus"
+            set_standard_digital_out(5, False)
+            $ 460 "Warten paket_hinten=HI"
+            while (get_standard_digital_in(3) == False):
+              sync()
+            end
+            $ 461 "Einstellen klemmung=Ein"
+            set_standard_digital_out(5, True)
+            $ 462 "Warten paket_vorne=HI"
+            while (get_standard_digital_in(4) == False):
+              sync()
+            end
+          end
+        else:
+          $ 463 "Else" "noBreak"
+          $ 464 "Einstellen freigabe_convey=Aus"
+          set_standard_digital_out(4, False)
+        end
+      end
+      $ 465 "sync()"
+      sync()
+    end
+  end
+  threadId_Thread_1 = run Thread_1()
+  $ 466 "Thread_2"
+  thread Thread_2():
+    while (True):
+      $ 467 "'Signalleuchte Zwischenlage'"
+      # 'Signalleuchte Zwischenlage'
+      $ 468 "If signal≟ True "
+      if (signal ==   True  ):
+        $ 469 "Einstellen licht_stopp=Ein"
+        set_standard_digital_out(2, True)
+        $ 470 "Einstellen licht_start=Ein"
+        set_standard_digital_out(1, True)
+        $ 471 "Einstellen DO[6]=Ein"
+        set_standard_digital_out(6, True)
+        $ 472 "Warten: 0.2"
+        sleep(0.2)
+        $ 473 "Einstellen licht_stopp=Aus"
+        set_standard_digital_out(2, False)
+        $ 474 "Einstellen licht_start=Aus"
+        set_standard_digital_out(1, False)
+        $ 475 "Einstellen DO[6]=Aus"
+        set_standard_digital_out(6, False)
+        $ 476 "Warten: 0.2"
+        sleep(0.2)
+      else:
+        $ 477 "Else" "noBreak"
+        $ 478 "Einstellen licht_stopp=Aus"
+        set_standard_digital_out(2, False)
+        $ 479 "Einstellen licht_start=Aus"
+        set_standard_digital_out(1, False)
+        $ 480 "Einstellen DO[6]=Aus"
+        set_standard_digital_out(6, False)
+      end
+      $ 481 "sync()"
+      sync()
+    end
+  end
+  threadId_Thread_2 = run Thread_2()
+  while (True):
+    $ 47 "Roboterprogramm"
+    $ 57 "Grundstellung"
+    $ 58 "FahreAchse"
+    $ 60 "Gst_Schmalz_nah" "breakAfter"
+    movej(Gst_Schmalz_nah_q, a=1.3962634015954636, v=1.0471975511965976)
+    $ 64 "conveyor_start≔ True "
+    global conveyor_start=  True  
+    $ 66 "Schleife Palette setzen"
+    $ 67 "Schleife Akt_Lage<=Lagenanzahl"
+    while (Akt_Lage<=Lagenanzahl):
+      $ 68 "Akt_Lagenart≔Lagenarten[Akt_Lage-1]"
+      global Akt_Lagenart=Lagenarten[Akt_Lage-1]
+      $ 69 "Start und Endpaket"
+      $ 70 "If Akt_Lagenart>1"
+      if (Akt_Lagenart>1):
+        $ 71 "zaehl_Lageart≔0"
+        global zaehl_Lageart=0
+        $ 72 "Endpaket≔0"
+        global Endpaket=0
+        $ 73 "Schleife zaehl_Lageart<Akt_Lagenart"
+        while (zaehl_Lageart<Akt_Lagenart):
+          $ 74 "Endpaket≔Endpaket+Pick_Anzahl[zaehl_Lageart]"
+          global Endpaket=Endpaket+Pick_Anzahl[zaehl_Lageart]
+          $ 75 "zaehl_Lageart≔zaehl_Lageart+1"
+          global zaehl_Lageart=zaehl_Lageart+1
+        end
+        $ 76 "Startpaket≔Endpaket-Pick_Anzahl[Akt_Lagenart-1]"
+        global Startpaket=Endpaket-Pick_Anzahl[Akt_Lagenart-1]
+      else:
+        $ 77 "Else" "noBreak"
+        $ 78 "Startpaket≔0"
+        global Startpaket=0
+        $ 79 "Endpaket≔Pick_Anzahl[Akt_Lagenart-1]"
+        global Endpaket=Pick_Anzahl[Akt_Lagenart-1]
+      end
+      $ 80 "Paket_Zaehler≔Startpaket"
+      global Paket_Zaehler=Startpaket
+      $ 81 "Akt_pal_hoehe≔(Paletten_Masse[2]/1000)+((karton_hoehe*Akt_Lage)/1000)"
+      global Akt_pal_hoehe=(Paletten_Masse[2]/1000)+((karton_hoehe*Akt_Lage)/1000)
+      $ 82 "Liftachse fahren"
+      $ 83 "max_palett_hoeh≔750"
+      global max_palett_hoeh=750
+      $ 84 "If Akt_pal_hoehe≥(max_palett_hoeh/1000)"
+      if (Akt_pal_hoehe >= (max_palett_hoeh/1000)):
+        $ 85 "Lagen_ohne_Lift≔floor((max_palett_hoeh-Paletten_Masse[2])/karton_hoehe)"
+        global Lagen_ohne_Lift=floor((max_palett_hoeh-Paletten_Masse[2])/karton_hoehe)
+        $ 86 "Akt_Lifthoehe≔(Akt_Lage-Lagen_ohne_Lift)*(karton_hoehe/1000)"
+        global Akt_Lifthoehe=(Akt_Lage-Lagen_ohne_Lift)*(karton_hoehe/1000)
+        $ 87 "If Akt_Lifthoehe > 0.900"
+        if (Akt_Lifthoehe > 0.900):
+          $ 88 "Akt_Lifthoehe≔0.900"
+          global Akt_Lifthoehe=0.900
+        end
+        $ 90 "move_liftkit(Akt_Lifthoehe*1000)"
+        move_liftkit(Akt_Lifthoehe*1000)
+        $ 91 "lift_hoehe≔Akt_Lifthoehe"
+        global lift_hoehe=Akt_Lifthoehe
+      else:
+        $ 92 "Else" "noBreak"
+        $ 93 "move_liftkit(0)"
+        move_liftkit(0)
+      end
+      $ 94 "akt_hoe_pick≔karton_hoehe-(lift_hoehe*1000)"
+      global akt_hoe_pick=karton_hoehe-(lift_hoehe*1000)
+      $ 95 "Aktuelle Palettenhoehe in Bezug zur Basis"
+      $ 96 "offset_basis≔(0.87+Akt_Lifthoehe)-Akt_pal_hoehe"
+      global offset_basis=(0.87+Akt_Lifthoehe)-Akt_pal_hoehe
+      $ 97 "If offset_basis>0"
+      if (offset_basis>0):
+        $ 98 "sichere_hoehe≔(karton_hoehe/1000)*1.5"
+        global sichere_hoehe=(karton_hoehe/1000)*1.5
+      end
+      $ 99 "If offset_basis≤0"
+      if (offset_basis <= 0):
+        $ 100 "sichere_hoehe≔(offset_basis*-1)+(karton_hoehe/1000)"
+        global sichere_hoehe=(offset_basis*-1)+(karton_hoehe/1000)
+      end
+      $ 101 "Zwischenlagen zählen"
+      $ 102 "counter≔0"
+      global counter=0
+      $ 103 "Akt_Anz_ZwLagen≔0"
+      global Akt_Anz_ZwLagen=0
+      $ 104 "Schleife counter<Akt_Lage"
+      while (counter<Akt_Lage):
+        $ 105 "Akt_Anz_ZwLagen≔Akt_Anz_ZwLagen + Zwischenlagen[counter]"
+        global Akt_Anz_ZwLagen=Akt_Anz_ZwLagen + Zwischenlagen[counter]
+        $ 106 "counter≔counter+1"
+        global counter=counter+1
+      end
+      $ 107 "akt_hoe_ueber≔(karton_hoehe*(Akt_Lage-1))-(lift_hoehe*1000)"
+      global akt_hoe_ueber=(karton_hoehe*(Akt_Lage-1))-(lift_hoehe*1000)
+      $ 108 "akt_hoe_place≔(karton_hoehe*Akt_Lage)-(lift_hoehe*1000)+(Akt_Anz_ZwLagen*Dicke_ZwLagen)"
+      global akt_hoe_place=(karton_hoehe*Akt_Lage)-(lift_hoehe*1000)+(Akt_Anz_ZwLagen*Dicke_ZwLagen)
+      $ 109 "Schleife Lage setzen"
+      $ 110 "Schleife Paket_Zaehler<Endpaket"
+      while (Paket_Zaehler<Endpaket):
+        $ 111 "Paketposition anfragen"
+        $ 112 "liste_paketpos≔PaketPos(Paket_Zaehler)"
+        global liste_paketpos=PaketPos(Paket_Zaehler)
+        $ 113 "If Paket_Zaehler<(Endpaket-1)"
+        if (Paket_Zaehler<(Endpaket-1)):
+          $ 114 "liste_nxt_paket≔PaketPos(Paket_Zaehler+1)"
+          global liste_nxt_paket=PaketPos(Paket_Zaehler+1)
+          $ 115 "If liste_nxt_paket[4]≤400"
+          if (liste_nxt_paket[4] <= 400):
+            $ 116 "Next_Place_near≔ True "
+            global Next_Place_near=  True  
+          else:
+            $ 117 "Else" "noBreak"
+            $ 118 "Next_Place_near≔ False "
+            global Next_Place_near=  False  
+          end
+        else:
+          $ 119 "Else" "noBreak"
+          $ 120 "Next_Place_near≔ True "
+          global Next_Place_near=  True  
+        end
+        $ 121 "If einlaufrichtung≟0"
+        if (einlaufrichtung == 0):
+          $ 122 "Einlaufrichtung längs"
+          $ 123 "pickup_x≔liste_paketpos[0]"
+          global pickup_x=liste_paketpos[0]
+          $ 124 "pickup_y≔liste_paketpos[1]"
+          global pickup_y=liste_paketpos[1]
+          $ 125 "pickup_z_vor≔akt_hoe_pick+offset_pickup_z"
+          global pickup_z_vor=akt_hoe_pick+offset_pickup_z
+          $ 127 "If liste_paketpos[6]≥2"
+          if (liste_paketpos[6] >= 2):
+            $ 128 "2 Paket Startposition laengs"
+            $ 129 "pickup_rot≔d2r(liste_paketpos[2]+90)"
+            global pickup_rot= d2r (liste_paketpos[2]+90)
+            $ 130 "Vor_Aufn_Pose≔p[pickup_x/1000,pickup_y/1000,pickup_z_vor/1000,0,0,pickup_rot]"
+            global Vor_Aufn_Pose=p[pickup_x/1000,pickup_y/1000,pickup_z_vor/1000,0,0,pickup_rot]
+            $ 131 "FahreAchse"
+            $ 132 "Vor_Aufn_Pose" "breakAfter"
+            movej(pose_trans(Aufnahme, Vor_Aufn_Pose), a=2.792526803190927, v=2.0943951023931953)
+            $ 133 "vor_aufn_gelenk≔get_actual_joint_positions()"
+            global vor_aufn_gelenk= get_actual_joint_positions ()
+            $ 134 "2 Paket laengs aufnehmen"
+            $ 135 "Aufn_Pos≔p[pickup_x/1000,pickup_y/1000,((akt_hoe_pick-8)/1000),0,0,pickup_rot]"
+            global Aufn_Pos=p[pickup_x/1000,pickup_y/1000,((akt_hoe_pick-8)/1000),0,0,pickup_rot]
+            $ 136 "Warten paket_vorne=HI"
+            while (get_standard_digital_in(4) == False):
+              sync()
+            end
+            # begin: URCap Program Node
+            #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+            #   Type: Schmalz Gripper
+            $ 137 "Schmalz: Suction"
+            set_tool_voltage(24)
+            set_tool_digital_out(0, False)
+            set_tool_digital_out(1, False)
+            wait_threshold_s = 1.5
+            current_time_cnt = 0.0
+            while (current_time_cnt<wait_threshold_s):
+              set_tool_digital_out(0, False)
+              set_tool_digital_out(1, False)
+              if (get_tool_digital_in(1)):
+                break
+              end
+              current_time_cnt = current_time_cnt+0.1
+              sleep(0.1)
+            end
+            # end: URCap Program Node
+            $ 138 "Warten: 0.4"
+            sleep(0.4)
+            $ 139 "Warten paket_hinten=HI"
+            while (get_standard_digital_in(3) == False):
+              sync()
+            end
+            $ 140 "Warten: 0.8"
+            sleep(0.8)
+            $ 141 "Warten paket_hinten=HI"
+            while (get_standard_digital_in(3) == False):
+              sync()
+            end
+            $ 142 "conveyor_start≔ False "
+            global conveyor_start=  False  
+            $ 143 "FahreLinear"
+            $ 144 "Aufn_Pos" "breakAfter"
+            movel(pose_trans(Aufnahme, Aufn_Pos), a=0.16, v=0.32)
+            # begin: URCap Program Node
+            #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+            #   Type: Schmalz Gripper
+            $ 146 "Schmalz: Suction"
+            set_tool_voltage(24)
+            set_tool_digital_out(0, False)
+            set_tool_digital_out(1, False)
+            wait_threshold_s = 1.5
+            current_time_cnt = 0.0
+            while (current_time_cnt<wait_threshold_s):
+              set_tool_digital_out(0, False)
+              set_tool_digital_out(1, False)
+              if (get_tool_digital_in(1)):
+                break
+              end
+              current_time_cnt = current_time_cnt+0.1
+              sleep(0.1)
+            end
+            # end: URCap Program Node
+            $ 147 "set_payload_mass(Greifer_Gewicht+(Artikel_Gewicht*liste_paketpos[6]))"
+            set_payload_mass(Greifer_Gewicht+(Artikel_Gewicht*liste_paketpos[6]))
+            $ 148 "Freifahren Aufnahme"
+            $ 149 "tmp_pose_1≔get_actual_tcp_pose()"
+            global tmp_pose_1= get_actual_tcp_pose ()
+            $ 150 "Einstellen freigabe_convey=Aus"
+            set_standard_digital_out(4, False)
+            $ 151 "tmp_pose_zwi≔pose_trans(tmp_pose_1, p[0,0,0.2,0,0,0])"
+            global tmp_pose_zwi=pose_trans(tmp_pose_1, p[0,0,0.2,0,0,0])
+            $ 153 "FahreLinear"
+            $ 154 "tmp_pose_zwi" "breakAfter"
+            movel(tmp_pose_zwi, a=0.18, v=0.32)
+            $ 156 "conveyor_start≔ True "
+            global conveyor_start=  True  
+            $ 157 "Einstellen freigabe_convey=Ein"
+            set_standard_digital_out(4, True)
+            $ 158 "Zwischenposition"
+            $ 159 "If einlaufrichtung≟1"
+            if (einlaufrichtung == 1):
+              $ 160 "place_rot_ueb≔d2r(liste_paketpos[5]-225)"
+              global place_rot_ueb=d2r(liste_paketpos[5]-225)
+            else:
+              $ 161 "Else" "noBreak"
+              $ 162 "place_rot_ueb≔d2r(liste_paketpos[5]+45)"
+              global place_rot_ueb=d2r(liste_paketpos[5]+45)
+            end
+            $ 163 "tmp_pose_1≔get_actual_tcp_pose()"
+            global tmp_pose_1= get_actual_tcp_pose ()
+            $ 164 "pose_zwischen≔pose_add(tmp_pose_1, p[-0.360,-0.360,0,0,0,0]) "
+            global pose_zwischen= pose_add (tmp_pose_1, p[-0.360,-0.360,0,0,0,0]) 
+            $ 165 "pose_zwischen[2]=sichere_hoehe"
+            pose_zwischen[2]=sichere_hoehe
+            $ 166 "pose_ueb_pal_2≔p[-0.605,-0.570,sichere_hoehe,0,0,place_rot_ueb]"
+            global pose_ueb_pal_2=p[-0.605,-0.570,sichere_hoehe,0,0,place_rot_ueb]
+            $ 169 "FahreAchse"
+            $ 170 "pose_zwischen" "breakAfter"
+            movej(pose_zwischen, a=3.141592653589793, v=3.141592653589793)
+            $ 173 "pose_ueb_pal_2" "breakAfter"
+            movej(pose_ueb_pal_2, a=3.141592653589793, v=3.141592653589793)
+            $ 174 "gelen_ueb_pal_2≔get_actual_joint_positions()"
+            global gelen_ueb_pal_2= get_actual_joint_positions ()
+          else:
+            $ 175 "Else" "noBreak"
+            $ 176 "1 Paket aufnehmen"
+            $ 177 "pickup_rot≔d2r(liste_paketpos[2])"
+            global pickup_rot= d2r (liste_paketpos[2])
+            $ 178 "Vor_Aufn_Pose≔p[pickup_x/1000,pickup_y/1000,pickup_z_vor/1000,0,0,pickup_rot]"
+            global Vor_Aufn_Pose=p[pickup_x/1000,pickup_y/1000,pickup_z_vor/1000,0,0,pickup_rot]
+            $ 179 "FahreAchse"
+            $ 180 "Vor_Aufn_Pose" "breakAfter"
+            movej(pose_trans(Aufnahme, Vor_Aufn_Pose), a=2.0943951023931953, v=3.141592653589793)
+            $ 181 "vor_aufn_gelenk≔get_actual_joint_positions()"
+            global vor_aufn_gelenk= get_actual_joint_positions ()
+            $ 182 "1 Paket quer aufnehmen"
+            $ 183 "Aufn_Pos≔p[pickup_x/1000,pickup_y/1000,((akt_hoe_pick-8)/1000),0,0,pickup_rot]"
+            global Aufn_Pos=p[pickup_x/1000,pickup_y/1000,((akt_hoe_pick-8)/1000),0,0,pickup_rot]
+            $ 184 "Warten paket_vorne=HI"
+            while (get_standard_digital_in(4) == False):
+              sync()
+            end
+            $ 185 "Warten: 0.1"
+            sleep(0.1)
+            $ 186 "conveyor_start≔ False "
+            global conveyor_start=  False  
+            $ 187 "FahreLinear"
+            $ 188 "Aufn_Pos" "breakAfter"
+            movel(pose_trans(Aufnahme, Aufn_Pos), a=0.1, v=0.2)
+            # begin: URCap Program Node
+            #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+            #   Type: Schmalz Gripper
+            $ 190 "Schmalz: Suction"
+            set_tool_voltage(24)
+            set_tool_digital_out(0, False)
+            set_tool_digital_out(1, False)
+            wait_threshold_s = 1.5
+            current_time_cnt = 0.0
+            while (current_time_cnt<wait_threshold_s):
+              set_tool_digital_out(0, False)
+              set_tool_digital_out(1, False)
+              if (get_tool_digital_in(1)):
+                break
+              end
+              current_time_cnt = current_time_cnt+0.1
+              sleep(0.1)
+            end
+            # end: URCap Program Node
+            $ 191 "set_payload_mass(Greifer_Gewicht+Artikel_Gewicht)"
+            set_payload_mass(Greifer_Gewicht+Artikel_Gewicht)
+            $ 192 "Freifahren Aufnahme"
+            $ 193 "tmp_pose_1≔get_actual_tcp_pose()"
+            global tmp_pose_1= get_actual_tcp_pose ()
+            $ 194 "tmp_pose_zwi≔pose_trans(tmp_pose_1, p[0,0,0.1,0,0,0])"
+            global tmp_pose_zwi=pose_trans(tmp_pose_1, p[0,0,0.1,0,0,0])
+            $ 196 "FahreLinear"
+            $ 197 "tmp_pose_zwi" "breakAfter"
+            movel(tmp_pose_zwi, a=0.18, v=0.36)
+            $ 199 "conveyor_start≔ True "
+            global conveyor_start=  True  
+            $ 200 "Zwischenposition"
+            $ 201 "If einlaufrichtung≟0"
+            if (einlaufrichtung == 0):
+              $ 202 "place_rot_ueb≔d2r(liste_paketpos[5]-225)"
+              global place_rot_ueb=d2r(liste_paketpos[5]-225)
+            else:
+              $ 203 "Else" "noBreak"
+              $ 204 "place_rot_ueb≔d2r(liste_paketpos[5]-315)"
+              global place_rot_ueb=d2r(liste_paketpos[5]-315)
+            end
+            $ 205 "tmp_pose_1≔get_actual_tcp_pose()"
+            global tmp_pose_1= get_actual_tcp_pose ()
+            $ 206 "pose_zwischen≔pose_add(tmp_pose_1, p[-0.360,-0.360,sichere_hoehe,0,0,0])"
+            global pose_zwischen= pose_add (tmp_pose_1, p[-0.360,-0.360,sichere_hoehe,0,0,0])
+            $ 207 "pose_zwischen[2]=sichere_hoehe"
+            pose_zwischen[2]=sichere_hoehe
+            $ 208 "pose_ueb_pal_2≔p[-0.550,-0.650,sichere_hoehe,0,0,place_rot_ueb]"
+            global pose_ueb_pal_2=p[-0.550,-0.650,sichere_hoehe,0,0,place_rot_ueb]
+            $ 210 "FahreAchse"
+            $ 211 "pose_zwischen" "breakAfter"
+            movej(pose_zwischen, a=2.0943951023931953, v=3.141592653589793, r=0.1)
+            $ 213 "pose_ueb_pal_2" "breakAfter"
+            movej(pose_ueb_pal_2, a=2.0943951023931953, v=3.141592653589793)
+            $ 214 "gelen_ueb_pal_2≔get_actual_joint_positions()"
+            global gelen_ueb_pal_2= get_actual_joint_positions ()
+          end
+        else:
+          $ 215 "Else" "noBreak"
+          $ 216 "Einlaufrichtung quer"
+          $ 217 "'X und Y vertauscht'"
+          # 'X und Y vertauscht'
+          $ 218 "pickup_x≔liste_paketpos[1]*(-1)"
+          global pickup_x=liste_paketpos[1]*(-1)
+          $ 219 "pickup_y≔liste_paketpos[0]*(-1)"
+          global pickup_y=liste_paketpos[0]*(-1)
+          $ 220 "pickup_z_vor≔akt_hoe_pick+offset_pickup_z"
+          global pickup_z_vor=akt_hoe_pick+offset_pickup_z
+          $ 221 "If liste_paketpos[6]≟1"
+          if (liste_paketpos[6] == 1):
+            $ 222 "1 Paket Startposition"
+            $ 223 "pickup_rot≔d2r(liste_paketpos[2]+90)"
+            global pickup_rot= d2r (liste_paketpos[2]+90)
+            $ 224 "Vor_Aufn_Pose≔p[pickup_x/1000,pickup_y/1000,pickup_z_vor/1000,0,0,pickup_rot]"
+            global Vor_Aufn_Pose=p[pickup_x/1000,pickup_y/1000,pickup_z_vor/1000,0,0,pickup_rot]
+            $ 225 "FahreAchse"
+            $ 226 "Vor_Aufn_Pose" "breakAfter"
+            movej(pose_trans(Aufnahme, Vor_Aufn_Pose), a=2.792526803190927, v=3.141592653589793)
+            $ 227 "vor_aufn_gelenk≔get_actual_joint_positions()"
+            global vor_aufn_gelenk= get_actual_joint_positions ()
+            $ 228 "1 Paket aufnehmen"
+            $ 229 "Aufn_Pos≔p[pickup_x/1000,pickup_y/1000,((akt_hoe_pick)/1000),0,0,pickup_rot]"
+            global Aufn_Pos=p[pickup_x/1000,pickup_y/1000,((akt_hoe_pick)/1000),0,0,pickup_rot]
+            $ 230 "Warten paket_vorne=HI"
+            while (get_standard_digital_in(4) == False):
+              sync()
+            end
+            $ 231 "Warten: 0.1"
+            sleep(0.1)
+            $ 233 "FahreLinear"
+            $ 234 "Aufn_Pos" "breakAfter"
+            movel(pose_trans(Aufnahme, Aufn_Pos), a=0.16, v=0.32)
+            # begin: URCap Program Node
+            #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+            #   Type: Schmalz Gripper
+            $ 236 "Schmalz: Suction"
+            set_tool_voltage(24)
+            set_tool_digital_out(0, False)
+            set_tool_digital_out(1, False)
+            wait_threshold_s = 1.5
+            current_time_cnt = 0.0
+            while (current_time_cnt<wait_threshold_s):
+              set_tool_digital_out(0, False)
+              set_tool_digital_out(1, False)
+              if (get_tool_digital_in(1)):
+                break
+              end
+              current_time_cnt = current_time_cnt+0.1
+              sleep(0.1)
+            end
+            # end: URCap Program Node
+            $ 237 "set_payload_mass(Greifer_Gewicht+Artikel_Gewicht)"
+            set_payload_mass(Greifer_Gewicht+Artikel_Gewicht)
+            $ 238 "Freifahren Aufnahme"
+            $ 239 "tmp_pose_1≔get_actual_tcp_pose()"
+            global tmp_pose_1= get_actual_tcp_pose ()
+            $ 240 "tmp_pose_zwi≔pose_trans(tmp_pose_1, p[0,0,0.08,0,0,0])"
+            global tmp_pose_zwi=pose_trans(tmp_pose_1, p[0,0,0.08,0,0,0])
+            $ 241 "FahreLinear"
+            $ 242 "tmp_pose_zwi" "breakAfter"
+            movel(tmp_pose_zwi, a=0.12, v=0.32)
+            $ 243 "conveyor_start≔ True "
+            global conveyor_start=  True  
+            $ 244 "Zwischenposition"
+            $ 245 "If einlaufrichtung≟0"
+            if (einlaufrichtung == 0):
+              $ 246 "place_rot_ueb≔d2r(liste_paketpos[5]-225)"
+              global place_rot_ueb=d2r(liste_paketpos[5]-225)
+            else:
+              $ 247 "Else" "noBreak"
+              $ 248 "place_rot_ueb≔d2r(liste_paketpos[5]-45)"
+              global place_rot_ueb=d2r(liste_paketpos[5]-45)
+            end
+            $ 249 "tmp_pose_1≔get_actual_tcp_pose()"
+            global tmp_pose_1= get_actual_tcp_pose ()
+            $ 250 "pose_zwischen≔pose_add(tmp_pose_1, p[-0.360,-0.360,sichere_hoehe,0,0,0])"
+            global pose_zwischen= pose_add (tmp_pose_1, p[-0.360,-0.360,sichere_hoehe,0,0,0])
+            $ 251 "pose_zwischen[2]=sichere_hoehe"
+            pose_zwischen[2]=sichere_hoehe
+            $ 252 "pose_ueb_pal_2≔p[-0.600,-0.650,sichere_hoehe,0,0,place_rot_ueb]"
+            global pose_ueb_pal_2=p[-0.600,-0.650,sichere_hoehe,0,0,place_rot_ueb]
+            $ 253 "FahreAchse"
+            $ 254 "pose_zwischen" "breakAfter"
+            movej(pose_zwischen, a=2.0943951023931953, v=2.792526803190927, r=0.1)
+            $ 255 "pose_ueb_pal_2" "breakAfter"
+            movej(pose_ueb_pal_2, a=2.0943951023931953, v=2.792526803190927)
+            $ 256 "gelen_ueb_pal_2≔get_actual_joint_positions()"
+            global gelen_ueb_pal_2= get_actual_joint_positions ()
+          else:
+            $ 257 "ElseIf liste_paketpos[6]≟2"
+            if (liste_paketpos[6] == 2):
+              $ 258 "2 Pakete aufnehmen"
+              $ 259 "pickup_rot≔d2r(liste_paketpos[2])"
+              global pickup_rot= d2r (liste_paketpos[2])
+              $ 260 "Vor_Aufn_Pose≔p[pickup_x/1000,0,pickup_z_vor/1000,0,0,pickup_rot]"
+              global Vor_Aufn_Pose=p[pickup_x/1000,0,pickup_z_vor/1000,0,0,pickup_rot]
+              $ 261 "FahreAchse"
+              $ 262 "Vor_Aufn_Pose" "breakAfter"
+              movej(pose_trans(Aufnahme, Vor_Aufn_Pose), a=1.3962634015954636, v=1.0471975511965976)
+              $ 263 "vor_aufn_gelenk≔get_actual_joint_positions()"
+              global vor_aufn_gelenk= get_actual_joint_positions ()
+              $ 264 "Erstes Paket aufnehmen"
+              $ 265 "Aufn_Pos≔p[pickup_x/1000,0,((akt_hoe_pick)/1000),0,0,pickup_rot]"
+              global Aufn_Pos=p[pickup_x/1000,0,((akt_hoe_pick)/1000),0,0,pickup_rot]
+              $ 266 "Warten paket_vorne=HI"
+              while (get_standard_digital_in(4) == False):
+                sync()
+              end
+              $ 267 "Warten: 0.1"
+              sleep(0.1)
+              $ 269 "FahreLinear"
+              $ 270 "Aufn_Pos" "breakAfter"
+              movel(pose_trans(Aufnahme, Aufn_Pos), a=0.12, v=0.32)
+              # begin: URCap Program Node
+              #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+              #   Type: Schmalz Gripper
+              $ 272 "Schmalz: Suction"
+              set_tool_voltage(24)
+              set_tool_digital_out(0, False)
+              set_tool_digital_out(1, False)
+              wait_threshold_s = 1.5
+              current_time_cnt = 0.0
+              while (current_time_cnt<wait_threshold_s):
+                set_tool_digital_out(0, False)
+                set_tool_digital_out(1, False)
+                if (get_tool_digital_in(1)):
+                  break
+                end
+                current_time_cnt = current_time_cnt+0.1
+                sleep(0.1)
+              end
+              # end: URCap Program Node
+              $ 273 "set_payload_mass(Greifer_Gewicht+Artikel_Gewicht)"
+              set_payload_mass(Greifer_Gewicht+Artikel_Gewicht)
+              $ 274 "Zweites Paket aufnehmen"
+              $ 275 "Vor_Aufn_Pose≔p[pickup_x/1000,((pickup_y/1000)-0.02),pickup_z_vor/1000,0,0,pickup_rot]"
+              global Vor_Aufn_Pose=p[pickup_x/1000,((pickup_y/1000)-0.02),pickup_z_vor/1000,0,0,pickup_rot]
+              $ 276 "FahreLinear"
+              $ 277 "Vor_Aufn_Pose" "breakAfter"
+              movel(pose_trans(Aufnahme, Vor_Aufn_Pose), a=0.12, v=0.32)
+              $ 279 "Warten paket_vorne=HI"
+              while (get_standard_digital_in(4) == False):
+                sync()
+              end
+              # begin: URCap Program Node
+              #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+              #   Type: Schmalz Gripper
+              $ 280 "Schmalz: Suction"
+              set_tool_voltage(24)
+              set_tool_digital_out(0, False)
+              set_tool_digital_out(1, False)
+              wait_threshold_s = 1.5
+              current_time_cnt = 0.0
+              while (current_time_cnt<wait_threshold_s):
+                set_tool_digital_out(0, False)
+                set_tool_digital_out(1, False)
+                if (get_tool_digital_in(1)):
+                  break
+                end
+                current_time_cnt = current_time_cnt+0.1
+                sleep(0.1)
+              end
+              # end: URCap Program Node
+              $ 283 "Aufn_Pos≔p[pickup_x/1000,pickup_y/1000,((akt_hoe_pick)/1000),0,0,pickup_rot]"
+              global Aufn_Pos=p[pickup_x/1000,pickup_y/1000,((akt_hoe_pick)/1000),0,0,pickup_rot]
+              $ 284 "Aufn_Pos_vor≔p[pickup_x/1000,pickup_y/1000,pickup_z_vor/1000,0,0,pickup_rot]"
+              global Aufn_Pos_vor=p[pickup_x/1000,pickup_y/1000,pickup_z_vor/1000,0,0,pickup_rot]
+              $ 285 "FahreLinear"
+              $ 286 "Aufn_Pos_vor" "breakAfter"
+              movel(pose_trans(Aufnahme, Aufn_Pos_vor), a=0.12, v=0.32)
+              $ 287 "Aufn_Pos" "breakAfter"
+              movel(pose_trans(Aufnahme, Aufn_Pos), a=0.12, v=0.32)
+              # begin: URCap Program Node
+              #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+              #   Type: Schmalz Gripper
+              $ 289 "Schmalz: Release"
+              set_tool_voltage(24)
+              set_tool_digital_out(0, True)
+              set_tool_digital_out(1, True)
+              sleep(0.5)
+              set_tool_digital_out(0, False)
+              set_tool_digital_out(1, True)
+              sleep(0.05)
+              # end: URCap Program Node
+              $ 290 "Warten: 0.5"
+              sleep(0.5)
+              # begin: URCap Program Node
+              #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+              #   Type: Schmalz Gripper
+              $ 292 "Schmalz: Suction"
+              set_tool_voltage(24)
+              set_tool_digital_out(0, False)
+              set_tool_digital_out(1, False)
+              wait_threshold_s = 1.5
+              current_time_cnt = 0.0
+              while (current_time_cnt<wait_threshold_s):
+                set_tool_digital_out(0, False)
+                set_tool_digital_out(1, False)
+                if (get_tool_digital_in(1)):
+                  break
+                end
+                current_time_cnt = current_time_cnt+0.1
+                sleep(0.1)
+              end
+              # end: URCap Program Node
+              $ 293 "set_payload_mass(Greifer_Gewicht+(Artikel_Gewicht*2))"
+              set_payload_mass(Greifer_Gewicht+(Artikel_Gewicht*2))
+              $ 294 "Freifahren"
+              $ 295 "tmp_pose_1≔get_actual_tcp_pose()"
+              global tmp_pose_1= get_actual_tcp_pose ()
+              $ 296 "tmp_pose_zwi≔pose_trans(tmp_pose_1, p[0,0,0.08,0,0,0])"
+              global tmp_pose_zwi=pose_trans(tmp_pose_1, p[0,0,0.08,0,0,0])
+              $ 297 "FahreLinear"
+              $ 298 "tmp_pose_zwi" "breakAfter"
+              movel(tmp_pose_zwi, a=0.06, v=0.16)
+              $ 299 "conveyor_start≔ True "
+              global conveyor_start=  True  
+              $ 300 "Zwischenposition"
+              $ 301 "place_rot_ueb≔d2r(liste_paketpos[5]+135)"
+              global place_rot_ueb=d2r(liste_paketpos[5]+135)
+              $ 302 "tmp_pose_1≔get_actual_tcp_pose()"
+              global tmp_pose_1= get_actual_tcp_pose ()
+              $ 303 "pose_zwischen≔pose_add(tmp_pose_1, p[-0.360,-0.360,0,0,0,0])"
+              global pose_zwischen= pose_add (tmp_pose_1, p[-0.360,-0.360,0,0,0,0])
+              $ 304 "pose_zwischen[2]=sichere_hoehe"
+              pose_zwischen[2]=sichere_hoehe
+              $ 305 "pose_ueb_pal_2≔p[-0.600,-0.650,sichere_hoehe,0,0,place_rot_ueb]"
+              global pose_ueb_pal_2=p[-0.600,-0.650,sichere_hoehe,0,0,place_rot_ueb]
+              $ 306 "FahreAchse"
+              $ 307 "pose_zwischen" "breakAfter"
+              movej(pose_zwischen, a=1.0471975511965976, v=1.5707963267948966)
+              $ 308 "pose_ueb_pal_2" "breakAfter"
+              movej(pose_ueb_pal_2, a=1.0471975511965976, v=1.5707963267948966)
+              $ 309 "gelen_ueb_pal_2≔get_actual_joint_positions()"
+              global gelen_ueb_pal_2= get_actual_joint_positions ()
+            else:
+              $ 310 "ElseIf liste_paketpos[6]≟3"
+              if (liste_paketpos[6] == 3):
+                $ 311 "3 Pakete aufnehmen"
+                $ 312 "pickup_rot≔d2r(liste_paketpos[2])"
+                global pickup_rot= d2r (liste_paketpos[2])
+                $ 313 "Vor_Aufn_Pose≔p[pickup_x/1000,karton_dim[1]/2000,pickup_z_vor/1000,0,0,pickup_rot]"
+                global Vor_Aufn_Pose=p[pickup_x/1000,karton_dim[1]/2000,pickup_z_vor/1000,0,0,pickup_rot]
+                $ 314 "FahreAchse"
+                $ 315 "Vor_Aufn_Pose" "breakAfter"
+                movej(pose_trans(Aufnahme, Vor_Aufn_Pose), a=1.3962634015954636, v=1.0471975511965976)
+                $ 316 "vor_aufn_gelenk≔get_actual_joint_positions()"
+                global vor_aufn_gelenk= get_actual_joint_positions ()
+                $ 317 "Erstes Paket aufnehmen"
+                $ 318 "Aufn_Pos≔p[pickup_x/1000,karton_dim[1]/2000,((akt_hoe_pick)/1000),0,0,pickup_rot]"
+                global Aufn_Pos=p[pickup_x/1000,karton_dim[1]/2000,((akt_hoe_pick)/1000),0,0,pickup_rot]
+                $ 319 "Warten paket_vorne=HI"
+                while (get_standard_digital_in(4) == False):
+                  sync()
+                end
+                $ 320 "Warten: 0.1"
+                sleep(0.1)
+                $ 321 "FahreLinear"
+                $ 322 "Aufn_Pos" "breakAfter"
+                movel(pose_trans(Aufnahme, Aufn_Pos), a=0.08, v=0.16)
+                # begin: URCap Program Node
+                #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+                #   Type: Schmalz Gripper
+                $ 324 "Schmalz: Suction"
+                set_tool_voltage(24)
+                set_tool_digital_out(0, False)
+                set_tool_digital_out(1, False)
+                wait_threshold_s = 1.5
+                current_time_cnt = 0.0
+                while (current_time_cnt<wait_threshold_s):
+                  set_tool_digital_out(0, False)
+                  set_tool_digital_out(1, False)
+                  if (get_tool_digital_in(1)):
+                    break
+                  end
+                  current_time_cnt = current_time_cnt+0.1
+                  sleep(0.1)
+                end
+                # end: URCap Program Node
+                $ 325 "set_payload_mass(Greifer_Gewicht+Artikel_Gewicht)"
+                set_payload_mass(Greifer_Gewicht+Artikel_Gewicht)
+                $ 326 "Zweites Paket aufnehmen"
+                $ 327 "Vor_Aufn_Pose≔p[pickup_x/1000,(-1*((karton_dim[1]/2000)+0.01)),pickup_z_vor/1000,0,0,pickup_rot]"
+                global Vor_Aufn_Pose=p[pickup_x/1000,(-1*((karton_dim[1]/2000)+0.01)),pickup_z_vor/1000,0,0,pickup_rot]
+                $ 328 "FahreLinear"
+                $ 329 "Vor_Aufn_Pose" "breakAfter"
+                movel(pose_trans(Aufnahme, Vor_Aufn_Pose), a=0.08, v=0.16)
+                $ 330 "Warten paket_vorne=HI"
+                while (get_standard_digital_in(4) == False):
+                  sync()
+                end
+                $ 331 "Aufn_Pos≔p[pickup_x/1000,(-1*(karton_dim[1]/2000)),((akt_hoe_pick)/1000),0,0,pickup_rot]"
+                global Aufn_Pos=p[pickup_x/1000,(-1*(karton_dim[1]/2000)),((akt_hoe_pick)/1000),0,0,pickup_rot]
+                $ 332 "Vor_Aufn_Pose≔p[pickup_x/1000,(-1*(karton_dim[1]/2000)),pickup_z_vor/1000,0,0,pickup_rot]"
+                global Vor_Aufn_Pose=p[pickup_x/1000,(-1*(karton_dim[1]/2000)),pickup_z_vor/1000,0,0,pickup_rot]
+                $ 333 "FahreLinear"
+                $ 334 "Vor_Aufn_Pose" "breakAfter"
+                movel(pose_trans(Aufnahme, Vor_Aufn_Pose), a=0.08, v=0.16)
+                $ 335 "Aufn_Pos" "breakAfter"
+                movel(pose_trans(Aufnahme, Aufn_Pos), a=0.08, v=0.16)
+                # begin: URCap Program Node
+                #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+                #   Type: Schmalz Gripper
+                $ 337 "Schmalz: Release"
+                set_tool_voltage(24)
+                set_tool_digital_out(0, True)
+                set_tool_digital_out(1, True)
+                sleep(0.5)
+                set_tool_digital_out(0, False)
+                set_tool_digital_out(1, True)
+                sleep(0.05)
+                # end: URCap Program Node
+                $ 338 "Warten: 0.1"
+                sleep(0.1)
+                # begin: URCap Program Node
+                #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+                #   Type: Schmalz Gripper
+                $ 340 "Schmalz: Suction"
+                set_tool_voltage(24)
+                set_tool_digital_out(0, False)
+                set_tool_digital_out(1, False)
+                wait_threshold_s = 1.5
+                current_time_cnt = 0.0
+                while (current_time_cnt<wait_threshold_s):
+                  set_tool_digital_out(0, False)
+                  set_tool_digital_out(1, False)
+                  if (get_tool_digital_in(1)):
+                    break
+                  end
+                  current_time_cnt = current_time_cnt+0.1
+                  sleep(0.1)
+                end
+                # end: URCap Program Node
+                $ 341 "set_payload_mass(Greifer_Gewicht+(Artikel_Gewicht*2))"
+                set_payload_mass(Greifer_Gewicht+(Artikel_Gewicht*2))
+                $ 342 "Drittes Paket aufnehmen"
+                $ 343 "Vor_Aufn_Pose≔p[pickup_x/1000,(-1*((karton_dim[1]*1.5/1000)+0.01)),pickup_z_vor/1000,0,0,pickup_rot]"
+                global Vor_Aufn_Pose=p[pickup_x/1000,(-1*((karton_dim[1]*1.5/1000)+0.01)),pickup_z_vor/1000,0,0,pickup_rot]
+                $ 344 "FahreLinear"
+                $ 345 "Vor_Aufn_Pose" "breakAfter"
+                movel(pose_trans(Aufnahme, Vor_Aufn_Pose), a=0.08, v=0.16)
+                $ 346 "Warten paket_vorne=HI"
+                while (get_standard_digital_in(4) == False):
+                  sync()
+                end
+                $ 347 "Aufn_Pos≔p[pickup_x/1000,(-1*(karton_dim[1]*1.5/1000)),((akt_hoe_pick)/1000),0,0,pickup_rot]"
+                global Aufn_Pos=p[pickup_x/1000,(-1*(karton_dim[1]*1.5/1000)),((akt_hoe_pick)/1000),0,0,pickup_rot]
+                $ 348 "FahreLinear"
+                $ 349 "Aufn_Pos" "breakAfter"
+                movel(pose_trans(Aufnahme, Aufn_Pos), a=0.08, v=0.16)
+                # begin: URCap Program Node
+                #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+                #   Type: Schmalz Gripper
+                $ 351 "Schmalz: Release"
+                set_tool_voltage(24)
+                set_tool_digital_out(0, True)
+                set_tool_digital_out(1, True)
+                sleep(0.5)
+                set_tool_digital_out(0, False)
+                set_tool_digital_out(1, True)
+                sleep(0.05)
+                # end: URCap Program Node
+                $ 352 "Warten: 0.1"
+                sleep(0.1)
+                # begin: URCap Program Node
+                #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+                #   Type: Schmalz Gripper
+                $ 354 "Schmalz: Suction"
+                set_tool_voltage(24)
+                set_tool_digital_out(0, False)
+                set_tool_digital_out(1, False)
+                wait_threshold_s = 1.5
+                current_time_cnt = 0.0
+                while (current_time_cnt<wait_threshold_s):
+                  set_tool_digital_out(0, False)
+                  set_tool_digital_out(1, False)
+                  if (get_tool_digital_in(1)):
+                    break
+                  end
+                  current_time_cnt = current_time_cnt+0.1
+                  sleep(0.1)
+                end
+                # end: URCap Program Node
+                $ 355 "set_payload_mass(Greifer_Gewicht+(Artikel_Gewicht*3))"
+                set_payload_mass(Greifer_Gewicht+(Artikel_Gewicht*3))
+                $ 356 "Freifahren"
+                $ 357 "tmp_pose_1≔get_actual_tcp_pose()"
+                global tmp_pose_1= get_actual_tcp_pose ()
+                $ 358 "tmp_pose_zwi≔pose_trans(tmp_pose_1, p[0,0,0.08,0,0,0])"
+                global tmp_pose_zwi=pose_trans(tmp_pose_1, p[0,0,0.08,0,0,0])
+                $ 359 "FahreLinear"
+                $ 360 "tmp_pose_zwi" "breakAfter"
+                movel(tmp_pose_zwi, a=0.06, v=0.16)
+                $ 361 "conveyor_start≔ True "
+                global conveyor_start=  True  
+                $ 362 "Zwischenposition"
+                $ 363 "place_rot_ueb≔d2r(liste_paketpos[5]+135)"
+                global place_rot_ueb=d2r(liste_paketpos[5]+135)
+                $ 364 "tmp_pose_1≔get_actual_tcp_pose()"
+                global tmp_pose_1= get_actual_tcp_pose ()
+                $ 365 "pose_zwischen≔pose_add(tmp_pose_1, p[-0.360,-0.360,sichere_hoehe,0,0,0])"
+                global pose_zwischen= pose_add (tmp_pose_1, p[-0.360,-0.360,sichere_hoehe,0,0,0])
+                $ 366 "pose_ueb_pal_2≔p[-0.600,-0.650,sichere_hoehe,0,0,place_rot_ueb]"
+                global pose_ueb_pal_2=p[-0.600,-0.650,sichere_hoehe,0,0,place_rot_ueb]
+                $ 367 "FahreAchse"
+                $ 368 "pose_zwischen" "breakAfter"
+                movej(pose_zwischen, a=1.0471975511965976, v=1.5707963267948966, r=0.1)
+                $ 369 "pose_ueb_pal_2" "breakAfter"
+                movej(pose_ueb_pal_2, a=1.0471975511965976, v=1.5707963267948966)
+                $ 370 "gelen_ueb_pal_2≔get_actual_joint_positions()"
+                global gelen_ueb_pal_2= get_actual_joint_positions ()
+              end
+            end
+          end
+        end
+        $ 371 "Paket ablegen"
+        $ 372 "place_x≔liste_paketpos[3]*(-1)"
+        global place_x=liste_paketpos[3]*(-1)
+        $ 373 "place_y≔liste_paketpos[4]*(-1)"
+        global place_y=liste_paketpos[4]*(-1)
+        $ 374 "place_z≔akt_hoe_place"
+        global place_z=akt_hoe_place
+        $ 375 "If Akt_Lage≤6"
+        if (Akt_Lage <= 6):
+          $ 376 "place_z≔akt_hoe_place+3"
+          global place_z=akt_hoe_place+3
+        end
+        $ 377 "If einlaufrichtung≟1"
+        if (einlaufrichtung == 1):
+          $ 379 "If liste_paketpos[6]≟1"
+          if (liste_paketpos[6] == 1):
+            $ 380 "place_rot≔d2r(liste_paketpos[5])"
+            global place_rot=d2r(liste_paketpos[5])
+          else:
+            $ 381 "Else" "noBreak"
+            $ 382 "place_rot≔d2r(liste_paketpos[5]-90)"
+            global place_rot=d2r(liste_paketpos[5]-90)
+          end
+        else:
+          $ 383 "Else" "noBreak"
+          $ 384 "If liste_paketpos[6]≟1"
+          if (liste_paketpos[6] == 1):
+            $ 385 "place_rot≔d2r(liste_paketpos[5])"
+            global place_rot=d2r(liste_paketpos[5])
+          else:
+            $ 386 "Else" "noBreak"
+            $ 387 "place_rot≔d2r(liste_paketpos[5]+90)"
+            global place_rot=d2r(liste_paketpos[5]+90)
+          end
+        end
+        $ 388 "place_pos≔p[place_x/1000,place_y/1000,(place_z/1000),0,0,place_rot]"
+        global place_pos=p[place_x/1000,place_y/1000,(place_z/1000),0,0,place_rot]
+        $ 389 "x_vec≔liste_paketpos[7]"
+        global x_vec=liste_paketpos[7]
+        $ 390 "y_vec≔liste_paketpos[8]"
+        global y_vec=liste_paketpos[8]
+        $ 391 "place_x_vor≔place_x+(x_vec*50*(-1))"
+        global place_x_vor=place_x+(x_vec*50*(-1))
+        $ 392 "place_y_vor≔place_y+(y_vec*50*(-1))"
+        global place_y_vor=place_y+(y_vec*50*(-1))
+        $ 393 "place_z_vor≔place_z+karton_hoehe+30"
+        global place_z_vor=place_z+karton_hoehe+30
+        $ 394 "place_pos_vor≔p[place_x_vor/1000,place_y_vor/1000,place_z_vor/1000,0,0,place_rot]"
+        global place_pos_vor=p[place_x_vor/1000,place_y_vor/1000,place_z_vor/1000,0,0,place_rot]
+        $ 395 "Debug Drehwinkel"
+        $ 396 "rot_debug_2≔pose_trans(Palette_extend, place_pos_vor)"
+        global rot_debug_2= pose_trans (Palette_extend, place_pos_vor)
+        $ 397 "rot_debug_trans≔get_inverse_kin(rot_debug_2)"
+        global rot_debug_trans= get_inverse_kin (rot_debug_2)
+        $ 398 "If rot_debug_trans[5]≥6"
+        if (rot_debug_trans[5] >= 6):
+          $ 399 "rot_debug_trans[5]=rot_debug_trans[5]-6.28318"
+          rot_debug_trans[5]=rot_debug_trans[5]-6.28318
+        end
+        $ 400 "If rot_debug_trans[5]≤-6"
+        if (rot_debug_trans[5] <= -6):
+          $ 401 "rot_debug_trans[5]=rot_debug_trans[5]+6.28318"
+          rot_debug_trans[5]=rot_debug_trans[5]+6.28318
+        end
+        $ 405 "movej(rot_debug_trans, a=2, v=3.14)"
+        movej(rot_debug_trans, a=2, v=3.14)
+        $ 406 "FahreLinear"
+        $ 407 "place_pos" "breakAfter"
+        movel(pose_trans(Palette_extend, place_pos), a=0.8, v=0.12)
+        # begin: URCap Program Node
+        #   Source: Schmalz Gripper, 4.0.3, J.Schmalz GmbH
+        #   Type: Schmalz Gripper
+        $ 409 "Schmalz: Release"
+        set_tool_voltage(24)
+        set_tool_digital_out(0, True)
+        set_tool_digital_out(1, True)
+        sleep(0.5)
+        set_tool_digital_out(0, False)
+        set_tool_digital_out(1, True)
+        sleep(0.05)
+        # end: URCap Program Node
+        $ 410 "set_payload_mass(Greifer_Gewicht)"
+        set_payload_mass(Greifer_Gewicht)
+        $ 411 "Freifahren Ablage"
+        $ 412 "tmp_pose_1≔get_actual_tcp_pose()"
+        global tmp_pose_1= get_actual_tcp_pose ()
+        $ 413 "tmp_pose_ablage≔pose_trans(tmp_pose_1, p[0,0,0.030,0,0,0])"
+        global tmp_pose_ablage= pose_trans (tmp_pose_1, p[0,0,0.030,0,0,0])
+        $ 414 "FahreLinear"
+        $ 415 "tmp_pose_ablage" "breakAfter"
+        movel(tmp_pose_ablage, a=0.08, v=0.06)
+        $ 416 "Zurueck zur Aufnahmeposition"
+        $ 417 "movej(gelen_ueb_pal_2, a=2, v=3.141)"
+        movej(gelen_ueb_pal_2, a=2, v=3.141)
+        $ 418 "If Next_Place_near≟ True "
+        if (Next_Place_near ==   True  ):
+          $ 419 "If liste_nxt_paket[6]≟1"
+          if (liste_nxt_paket[6] == 1):
+            $ 420 "FahreAchse"
+            $ 421 "Gst_Schmalz_nah" "breakAfter"
+            movej(Gst_Schmalz_nah_q, a=2.0943951023931953, v=3.141592653589793)
+          else:
+            $ 423 "Else" "noBreak"
+            $ 424 "FahreAchse"
+            $ 425 "Gst_Schm_nah_Mu" "breakAfter"
+            movej(Gst_Schm_nah_Mu_q, a=2.0943951023931953, v=3.141592653589793)
+          end
+        else:
+          $ 427 "Else" "noBreak"
+          $ 428 "If liste_nxt_paket[6]≟1"
+          if (liste_nxt_paket[6] == 1):
+            $ 429 "FahreAchse"
+            $ 430 "Gst_Schmalz_far" "breakAfter"
+            movej(Gst_Schmalz_far_q, a=2.0943951023931953, v=3.141592653589793)
+          else:
+            $ 432 "Else" "noBreak"
+            $ 433 "FahreAchse"
+            $ 434 "Gst_Schm_far_Mu" "breakAfter"
+            movej(Gst_Schm_far_Mu_q, a=2.0943951023931953, v=3.141592653589793)
+          end
+        end
+        $ 436 "Paket_Zaehler≔Paket_Zaehler+1"
+        global Paket_Zaehler=Paket_Zaehler+1
+      end
+      $ 437 "If Zwischenlagen[Akt_Lage-1]≟1"
+      if (Zwischenlagen[Akt_Lage-1] == 1):
+        $ 438 "signal≔ True "
+        global signal=  True  
+        $ 439 "Meldung: Zwischenlage einlegen und dann WEITER drücken! Achtung Roboter fährt los!"
+        popup("Zwischenlage einlegen und dann WEITER drücken! Achtung Roboter fährt los!", "Meldung", False, False, blocking=True)
+        $ 440 "signal≔ False "
+        global signal=  False  
+      end
+      $ 441 "FahreAchse"
+      $ 442 "Gst_Schmalz_nah" "breakAfter"
+      movej(Gst_Schmalz_nah_q, a=1.3962634015954636, v=1.0471975511965976)
+      $ 443 "Akt_Lage≔Akt_Lage+1"
+      global Akt_Lage=Akt_Lage+1
+    end
+    $ 444 "FahreAchse"
+    $ 445 "Palettenwechsel" "breakAfter"
+    movej(get_inverse_kin(Palettenwechsel_p, qnear=Palettenwechsel_q), a=1.3962634015954636, v=1.0471975511965976)
+    # begin: URCap Program Node
+    #   Source: LIFTKIT, 1.0.5, SKF Actuation System (Liestal) AG
+    #   Type: LIFTKIT
+    $ 446 "LIFT: 200mm"
+    move_liftkit(200)
+    # end: URCap Program Node
+    $ 447 "signal≔ True "
+    global signal=  True  
+    $ 448 "Meldung: Palette wechseln und dann WEITER drücken! Achtung Roboter fährt los!"
+    popup("Palette wechseln und dann WEITER drücken! Achtung Roboter fährt los!", "Meldung", False, False, blocking=True)
+    $ 449 "signal≔ False "
+    global signal=  False  
+    $ 450 "Akt_Lage≔1"
+    global Akt_Lage=1
+    $ 451 "lift_hoehe≔0"
+    global lift_hoehe=0
+    $ 452 "Akt_Lifthoehe≔0"
+    global Akt_Lifthoehe=0
+  end
+end
