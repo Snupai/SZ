@@ -15,7 +15,7 @@ sudo apt upgrade --yes
 echo -e '\n\033[0;32mDone.\033[0m\n'
 sleep 4s
 echo -e 'Installing on-screen keyboard and wmctrl:\n\n'
-sudo apt-get install matchbox-keyboard --yes
+sudo apt-get install matchbox-keyboard 
 sleep 1s
 echo
 sudo apt-get install wmctrl 
@@ -41,7 +41,6 @@ sudo chmod +x /home/pi/Python/move-keyboard.sh
 sudo chmod +x /home/pi/Python/keyboard.sh
 sudo chmod +x /home/pi/Python/multipack-parser.sh
 sudo chmod +x /home/pi/Python/auto-copy-files-from-usb.sh
-sudo chmod -R 777 /home/pi/Python/
 sleep 4s
 echo -e '\033[0;32mDone.\033[0m'
 sleep 5s

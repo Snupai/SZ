@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Screen Keyboard Autostart
+Exec=/home/pi/Python/keyboard.sh
+Type=Application
+Terminal=false
+
